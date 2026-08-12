@@ -1,0 +1,6 @@
+{
+  "name": "تلي جوب AI",
+  "description": "تطبيق رصد واستخراج الوظائف المباشرة من قنوات تلغرام وتحليلها بالذكاء الاصطناعي Gemini",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
