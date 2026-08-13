@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -25,6 +27,9 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+          PHONE_NUMBER: ${{ secrets.PHONE_NUMBER }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "Decoding KEYSTORE_BASE64 secret..."
@@ -37,8 +42,11 @@ jobs:
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
-          echo "Preparing .env file..."
-          echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
+          echo "Preparing .env file with repository secrets..."
+          echo "GEMINI_API_KEY=\"${GEMINI_API_KEY:-MY_GEMINI_API_KEY}\"" > .env
+          echo "API_ID=\"${API_ID:-MY_API_ID}\"" >> .env
+          echo "API_HASH=\"${API_HASH:-MY_API_HASH}\"" >> .env
+          echo "PHONE_NUMBER=\"${PHONE_NUMBER:-MY_PHONE_NUMBER}\"" >> .env
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -46,6 +54,9 @@ jobs:
       - name: Build Debug APK
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+          PHONE_NUMBER: ${{ secrets.PHONE_NUMBER }}
           CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
           CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
           CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
@@ -56,3 +67,14 @@ jobs:
         with:
           name: TeleJob-AI-APK
           path: app/build/outputs/apk/debug/*.apk
+
+      - name: Create GitHub Release with Direct APK
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "TeleJob AI v1.0.${{ github.run_number }}"
+          body: "تم بناء التطبيق وتضمين مفاتيح Telegram و Gemini AI من أسرار المستودع بنجاح."
+          files: app/build/outputs/apk/debug/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

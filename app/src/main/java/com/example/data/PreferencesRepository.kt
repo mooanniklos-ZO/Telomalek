@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -25,16 +26,23 @@ class PreferencesRepository(private val context: Context) {
         val KEY_NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
     }
 
+    private fun getBuildConfigString(value: String?): String {
+        return if (value.isNullOrBlank() || value.startsWith("MY_") || value == "null") "" else value
+    }
+
     val telegramApiId: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_TELEGRAM_API_ID] ?: ""
+        val saved = prefs[KEY_TELEGRAM_API_ID]
+        if (!saved.isNullOrBlank()) saved else getBuildConfigString(runCatching { BuildConfig.API_ID }.getOrNull())
     }
 
     val telegramApiHash: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_TELEGRAM_API_HASH] ?: ""
+        val saved = prefs[KEY_TELEGRAM_API_HASH]
+        if (!saved.isNullOrBlank()) saved else getBuildConfigString(runCatching { BuildConfig.API_HASH }.getOrNull())
     }
 
     val telegramPhone: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_TELEGRAM_PHONE] ?: ""
+        val saved = prefs[KEY_TELEGRAM_PHONE]
+        if (!saved.isNullOrBlank()) saved else getBuildConfigString(runCatching { BuildConfig.PHONE_NUMBER }.getOrNull())
     }
 
     val isTelegramLoggedIn: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -42,7 +50,8 @@ class PreferencesRepository(private val context: Context) {
     }
 
     val geminiApiKey: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_GEMINI_API_KEY] ?: ""
+        val saved = prefs[KEY_GEMINI_API_KEY]
+        if (!saved.isNullOrBlank()) saved else getBuildConfigString(runCatching { BuildConfig.GEMINI_API_KEY }.getOrNull())
     }
 
     val isServiceActive: Flow<Boolean> = context.dataStore.data.map { prefs ->
