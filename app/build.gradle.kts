@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
@@ -7,6 +8,21 @@ plugins {
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
+}
+
+fun secret(name: String, defaultValue: String = ""): String {
+  val envValue = System.getenv(name)
+  if (!envValue.isNullOrBlank()) return envValue
+
+  val envFile = rootProject.file(".env")
+  if (envFile.exists()) {
+    val props = Properties()
+    envFile.inputStream().use { props.load(it) }
+    val fileValue = props.getProperty(name)
+    if (!fileValue.isNullOrBlank()) return fileValue
+  }
+
+  return defaultValue
 }
 
 android {
@@ -19,6 +35,11 @@ android {
     targetSdk = 36
     versionCode = 1
     versionName = "1.0"
+
+    buildConfigField("String", "API_ID", "\"${secret("API_ID")}\"")
+    buildConfigField("String", "API_HASH", "\"${secret("API_HASH")}\"")
+    buildConfigField("String", "PHONE_NUMBER", "\"${secret("PHONE_NUMBER")}\"")
+    buildConfigField("String", "GEMINI_API_KEY", "\"${secret("GEMINI_API_KEY", "MY_GEMINI_API_KEY")}\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
