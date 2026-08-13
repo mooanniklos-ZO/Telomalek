@@ -21,21 +21,34 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Decode Keystore & Prepare Environment
+      - name: Decode Keystore & Prepare Secrets Environment
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ -f "debug.keystore.base64" ]; then
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding KEYSTORE_BASE64 secret..."
+            echo "$KEYSTORE_BASE64" | base64 -d > debug.keystore
+          elif [ -f "debug.keystore.base64" ]; then
             echo "Decoding debug.keystore.base64..."
             base64 -d debug.keystore.base64 > debug.keystore
+          else
+            echo "Generating fallback debug.keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
-          if [ ! -f ".env" ] && [ -f ".env.example" ]; then
-            echo "Copying .env.example to .env..."
-            cp .env.example .env
-          fi
+
+          echo "Preparing .env file..."
+          echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build Debug APK
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
         run: gradle assembleDebug --stacktrace
 
       - name: Upload APK Artifact
